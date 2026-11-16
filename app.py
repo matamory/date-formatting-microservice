@@ -32,11 +32,8 @@ def format_value():
             result = format_timestamp(data["value"])
     except ValueError as error:
         return jsonify(success=False, error=str(error), fields=["value"]), 400
-    except NotImplementedError:
-        # Date functions are stubs until Yesenia adds her implementation.
-        return jsonify(success=False, error="This formatter is not implemented yet."), 501
 
-    return jsonify(success=True, result=result), 200
+    return jsonify(success=True, formatted=result), 200
 
 
 if __name__ == "__main__":

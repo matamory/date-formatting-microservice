@@ -4,23 +4,23 @@ from datetime import datetime
 
 
 def format_timestamp(value):
-    """Convert YYYY-MM-DDTHH:MM:SS to MM/DD/YYYY hh:mm AM/PM.
+    """Convert an ISO timestamp to MM/DD/YYYY hh:mm AM/PM.
 
-    Also accepts a space instead of T. Invalid input raises ValueError.
+    Accepts timezone offsets and a space instead of T.
+    Invalid input raises ValueError.
     Timestamps use the supplied clock time; no timezone conversion is done.
     """
     if not isinstance(value, str):
-        raise ValueError("Timestamp must be a string in YYYY-MM-DDTHH:MM:SS format.")
+        raise ValueError("Timestamp must be an ISO date and time string.")
 
-    # Try the two supported input formats. strptime validates the date and time.
-    for input_format in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"):
-        try:
-            timestamp = datetime.strptime(value, input_format)
-        except ValueError:
-            continue
+    # Require a time as well as a date; fromisoformat also accepts dates alone.
+    if len(value) < 16 or value[10] not in ("T", " "):
+        raise ValueError("Timestamp must include a date and time.")
 
-        # Round-tripping also requires zero-padded input fields.
-        if timestamp.strftime(input_format) == value:
-            return timestamp.strftime("%m/%d/%Y %I:%M %p")
+    # Parse the supplied offset without converting to another timezone.
+    try:
+        timestamp = datetime.fromisoformat(value)
+    except ValueError:
+        raise ValueError("Use a valid ISO timestamp, such as 2026-11-09T09:05:00-05:00.") from None
 
-    raise ValueError("Use a valid timestamp in YYYY-MM-DDTHH:MM:SS format.")
+    return timestamp.strftime("%m/%d/%Y %I:%M %p")
