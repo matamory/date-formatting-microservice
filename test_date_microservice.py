@@ -1,17 +1,15 @@
 """Start app.py in another terminal before running this test program."""
 
 import json
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 URL = "http://127.0.0.1:5001/format"
 
 
-def test_request(name, data, expected_status, expected_value=None):
+def send(data, expected_status, expected_value=None):
     # Show what we are sending to the service.
-    print("\n" + name)
-    print("Sending POST to", URL)
-    print("Request JSON:", json.dumps(data))
+    print(f"\nREQUEST:\n     POST {URL}\n     {data}\n")
 
     # Send an HTTP request instead of calling the service's functions.
     request = Request(URL, data=json.dumps(data).encode("utf-8"),
@@ -27,8 +25,7 @@ def test_request(name, data, expected_status, expected_value=None):
         status = response.code
         result = json.loads(response.read().decode("utf-8"))
 
-    print("Received HTTP status:", status)
-    print("Response JSON:", json.dumps(result))
+    print(f"RESPONSE:\n     Status Code: {status}\n     {result}\n")
     # Check that the service returned the expected data.
     assert status == expected_status, "Unexpected HTTP status"
     if expected_status == 200:
@@ -38,20 +35,67 @@ def test_request(name, data, expected_status, expected_value=None):
     else:
         assert result["success"] is False
         assert isinstance(result["error"], str)
-    print("PASS")
+    print("PASS\n")
 
 
 if __name__ == "__main__":
-    # Try each formatting option and one invalid date.
-    try:
-        test_request("Single date", {"type": "date", "value": "2026-11-09"},
-                     200, "11/09/2026")
-        test_request("Timestamp", {"type": "timestamp", "value": "2026-11-09T09:05:00-05:00"},
-                     200, "11/09/2026 09:05 AM")
-        test_request("Multiple dates", {"type": "dates", "value": ["2026-11-01", "2026-11-09"]},
-                     200, ["11/01/2026", "11/09/2026"])
-        test_request("Invalid date", {"type": "date", "value": "2026-13-40"}, 400)
-    except URLError as error:
-        raise SystemExit("Could not reach the service. Start app.py in another terminal. " + str(error))
+    # ========================== USER STORY 1 ========================== Format a Date
+    print("================= USER STORY 1: Format a Date =================\n")
 
-    print("\nAll four HTTP demonstration checks passed.")
+    print("-----------------------------------------------------------")
+    print("Functional Requirement 1 - Successful date formatting:\n\n"
+          "Given a Fitness Tracker workout has a date of 2026-11-09,\n"
+          "when the application requests that the date be formatted,\n"
+          "then the microservice returns 11/09/2026.\n")
+    print("Expected: 200, formatted = 11/09/2026")
+    send({"type": "date", "value": "2026-11-09"}, 200, "11/09/2026")
+
+    print("-----------------------------------------------------------")
+    print("Functional Requirement 2 - Invalid date:\n\n"
+          "Given an invalid date such as 2026-13-40,\n"
+          "when formatting is requested, then the service returns an error\n"
+          "indicating that the date is invalid.\n")
+    print("Expected: 400, success = False and an error message")
+    send({"type": "date", "value": "2026-13-40"}, 400)
+
+    # ========================== USER STORY 2 ========================== Format a Timestamp
+    print("================= USER STORY 2: Format a Timestamp =================\n")
+
+    print("-----------------------------------------------------------")
+    print("Functional Requirement 1 - Successful timestamp formatting:\n\n"
+          "Given a Medical Journal entry has a timestamp of\n"
+          "2026-11-09T09:05:00-05:00, when formatting is requested,\n"
+          "then the service returns 11/09/2026 09:05 AM.\n")
+    print("Expected: 200, formatted = 11/09/2026 09:05 AM")
+    send({"type": "timestamp", "value": "2026-11-09T09:05:00-05:00"},
+         200, "11/09/2026 09:05 AM")
+
+    print("-----------------------------------------------------------")
+    print("Functional Requirement 2 - Invalid timestamp:\n\n"
+          "Given an invalid timestamp such as 2026-11-09T25:00:00,\n"
+          "when formatting is requested, then the service returns an error\n"
+          "indicating that the timestamp is invalid.\n")
+    print("Expected: 400, success = False and an error message")
+    send({"type": "timestamp", "value": "2026-11-09T25:00:00"}, 400)
+
+    # ========================== USER STORY 3 ========================== Format Multiple Dates
+    print("================= USER STORY 3: Format Multiple Dates =================\n")
+
+    print("-----------------------------------------------------------")
+    print("Functional Requirement 1 - Successfully format multiple dates:\n\n"
+          "Given workout dates of 2026-11-01, 2026-11-03, and 2026-11-09,\n"
+          "when the application submits all three dates for formatting,\n"
+          "then the service returns 11/01/2026, 11/03/2026, and 11/09/2026\n"
+          "in the same order.\n")
+    print("Expected: 200, formatted = ['11/01/2026', '11/03/2026', '11/09/2026']")
+    send({"type": "dates", "value": ["2026-11-01", "2026-11-03", "2026-11-09"]},
+         200, ["11/01/2026", "11/03/2026", "11/09/2026"])
+
+    print("-----------------------------------------------------------")
+    print("Functional Requirement 2 - Empty date list:\n\n"
+          "Given an empty list of dates, when formatting is requested,\n"
+          "then the service returns an empty list without an error.\n")
+    print("Expected: 200, formatted = []")
+    send({"type": "dates", "value": []}, 200, [])
+
+    print("All six functional requirement checks passed.")
